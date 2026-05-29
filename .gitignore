@@ -26,6 +26,9 @@ tmp_tmpl/
 minimal-test/
 template-test/
 
+# Termux bundle (too large for git, generated locally)
+android/assets/termux-bundle.*
+
 # APK files (built artifacts)
 *.apk
 *.idsig

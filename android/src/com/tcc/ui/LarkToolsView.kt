@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.*
 import com.tcc.api.LarkClient
 
+// 飞书 CLI 工具视图
 class LarkToolsView(context: Context) : FrameLayout(context) {
 
     companion object {
@@ -172,6 +173,7 @@ class LarkToolsView(context: Context) : FrameLayout(context) {
         addView(rootLayout)
     }
 
+    // 创建分区标题
     private fun createSectionTitle(title: String): TextView {
         return TextView(context).apply {
             text = title.uppercase()

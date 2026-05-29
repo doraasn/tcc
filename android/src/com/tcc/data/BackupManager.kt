@@ -14,12 +14,14 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
+// 备份管理器 - 支持 WebDAV 和本地导出
 class BackupManager(private val context: Context) {
 
     private val backupDir = File(context.filesDir, "backups")
 
     init { backupDir.mkdirs() }
 
+    // 获取 WebDAV 客户端实例
     fun getWebDavClient(): WebDavClient? {
         val config = ConfigManager.getInstance(context)
         val url = config.getWebDavUrl()
@@ -29,6 +31,7 @@ class BackupManager(private val context: Context) {
         return WebDavClient(url, user, pass)
     }
 
+    // 测试 WebDAV 连接
     fun testConnection(callback: (Boolean, String) -> Unit) {
         val client = getWebDavClient()
         if (client == null) {
@@ -41,6 +44,7 @@ class BackupManager(private val context: Context) {
         }.start()
     }
 
+    // 备份数据到 WebDAV
     fun backupToWebDav(callback: (Boolean, String) -> Unit) {
         val client = getWebDavClient()
         if (client == null) {
@@ -64,6 +68,7 @@ class BackupManager(private val context: Context) {
         }.start()
     }
 
+    // 从 WebDAV 恢复数据
     fun restoreFromWebDav(callback: (Boolean, String) -> Unit) {
         val client = getWebDavClient()
         if (client == null) {
@@ -107,6 +112,7 @@ class BackupManager(private val context: Context) {
         }.start()
     }
 
+    // 导出到本地文件
     fun exportToLocal(callback: (Boolean, String) -> Unit) {
         Thread {
             try {
@@ -121,6 +127,7 @@ class BackupManager(private val context: Context) {
         }.start()
     }
 
+    // 收集所有数据用于备份
     private fun collectAllData(): String {
         val convManager = ConversationManager.getInstance(context)
         val config = ConfigManager.getInstance(context)
@@ -149,6 +156,7 @@ class BackupManager(private val context: Context) {
         return data.toString(2)
     }
 
+    // 从 JSON 恢复所有数据
     private fun restoreAllData(json: String) {
         val data = JSONObject(json)
         val convManager = ConversationManager.getInstance(context)

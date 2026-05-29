@@ -7,10 +7,12 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import com.tcc.TermuxBootstrap
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
 
+// Shell 终端视图
 class ShellView(context: Context) : FrameLayout(context) {
 
     companion object {
@@ -40,9 +42,15 @@ class ShellView(context: Context) : FrameLayout(context) {
     private val termuxBash = "$termuxPrefix/bin/bash"
 
     init {
-        // Detect Termux
-        termuxUsable = File(termuxBash).canExecute()
-        currentDir = if (termuxUsable) termuxHome else "/sdcard"
+        // Determine Termux availability
+        val embedded = TermuxBootstrap.isInstalled(context)
+        val systemTermux = TermuxBootstrap.isAvailable()
+        termuxUsable = embedded || systemTermux
+        currentDir = when {
+            embedded -> TermuxBootstrap.getHomeDir(context).absolutePath
+            systemTermux -> termuxHome
+            else -> "/sdcard"
+        }
 
         setBackgroundColor(BG)
         val rootLayout = LinearLayout(context).apply {
@@ -86,7 +94,11 @@ class ShellView(context: Context) : FrameLayout(context) {
 
         // Status indicator
         statusText = TextView(context).apply {
-            text = if (termuxUsable) "Termux 已连接" else "Termux 不可用 (回退到系统 sh)"
+            text = when {
+                TermuxBootstrap.isInstalled(context) -> "Termux 环境就绪 (内置)"
+                TermuxBootstrap.isAvailable() -> "Termux 已连接 (系统)"
+                else -> "Termux 未安装 — 使用系统 sh"
+            }
             setTextColor(if (termuxUsable) SUCCESS else TEXT_TERTIARY)
             textSize = 12f
             setBackgroundColor(SURFACE_ELEVATED)
@@ -225,6 +237,7 @@ class ShellView(context: Context) : FrameLayout(context) {
         addView(rootLayout)
     }
 
+    // 切换工作目录
     private fun cd(path: String) {
         val dir = if (path.startsWith("/")) File(path) else File(currentDir, path)
         if (dir.isDirectory) {
@@ -236,23 +249,32 @@ class ShellView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 执行 Shell 命令
     private fun runCommand(cmd: String) {
         outputText.text = "$ $cmd\n执行中…"
         Thread {
             try {
                 val pb = ProcessBuilder()
                 if (termuxUsable) {
-                    // Use Termux bash with full environment
-                    pb.command(termuxBash, "-c", "cd \"$currentDir\" && $cmd")
-                    pb.environment().apply {
-                        put("HOME", termuxHome)
-                        put("PREFIX", termuxPrefix)
-                        put("PATH", "$termuxPrefix/bin:$termuxPrefix/bin/applets:/system/bin:/system/xbin")
-                        put("LD_LIBRARY_PATH", "$termuxPrefix/lib")
-                        put("TMPDIR", "$termuxPrefix/tmp")
-                        put("TERM", "xterm-256color")
-                        put("LANG", "en_US.UTF-8")
+                    val env = if (TermuxBootstrap.isInstalled(context)) {
+                        TermuxBootstrap.buildEnvironment(context)
+                    } else {
+                        mapOf(
+                            "HOME" to termuxHome,
+                            "PREFIX" to termuxPrefix,
+                            "PATH" to "$termuxPrefix/bin:$termuxPrefix/bin/applets:/system/bin:/system/xbin",
+                            "LD_LIBRARY_PATH" to "$termuxPrefix/lib",
+                            "TMPDIR" to "$termuxPrefix/tmp",
+                            "TERM" to "xterm-256color",
+                            "LANG" to "en_US.UTF-8"
+                        )
                     }
+                    val bash = if (TermuxBootstrap.isInstalled(context))
+                        TermuxBootstrap.getPrefixDir(context).absolutePath + "/bin/bash"
+                    else
+                        termuxBash
+                    pb.command(bash, "-c", "cd \"$currentDir\" && $cmd")
+                    pb.environment().putAll(env)
                     pb.directory(File(currentDir))
                 } else {
                     pb.command("sh", "-c", "cd \"$currentDir\" && $cmd")

@@ -4,13 +4,16 @@ import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 
+// WebDAV 客户端 - 文件上传下载
 class WebDavClient(
     private val serverUrl: String,
     private val username: String,
     private val password: String
 ) {
+    // 操作结果数据类
     data class Result(val ok: Boolean, val message: String, val data: ByteArray? = null)
 
+    // 创建 HTTP 连接
     private fun createConnection(path: String, method: String): HttpURLConnection {
         val url = URL("${serverUrl.trimEnd('/')}/$path")
         val conn = url.openConnection() as HttpURLConnection
@@ -27,6 +30,7 @@ class WebDavClient(
         return conn
     }
 
+    // 测试 WebDAV 连接
     fun testConnection(): Result {
         return try {
             val conn = createConnection("", "PROPFIND")
@@ -47,6 +51,7 @@ class WebDavClient(
         }
     }
 
+    // 上传文件
     fun upload(path: String, data: ByteArray): Result {
         return try {
             val conn = createConnection(path, "PUT")
@@ -67,6 +72,7 @@ class WebDavClient(
         }
     }
 
+    // 下载文件
     fun download(path: String): Result {
         return try {
             val conn = createConnection(path, "GET")
@@ -91,6 +97,7 @@ class WebDavClient(
         }
     }
 
+    // 列出文件
     fun list(path: String): Result {
         return try {
             val conn = createConnection(path, "PROPFIND")
@@ -120,6 +127,7 @@ class WebDavClient(
         }
     }
 
+    // 创建目录
     fun mkdir(path: String): Result {
         return try {
             val conn = createConnection(path, "MKCOL")

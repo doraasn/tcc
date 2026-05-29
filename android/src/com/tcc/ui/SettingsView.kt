@@ -20,6 +20,7 @@ import android.widget.Spinner
 import android.widget.TextView
 import com.tcc.data.ConfigManager
 
+// 设置视图
 class SettingsView(context: Context) : FrameLayout(context) {
 
     companion object {
@@ -102,6 +103,7 @@ class SettingsView(context: Context) : FrameLayout(context) {
         addView(rootLayout)
     }
 
+    // 创建顶部栏
     private fun createTopBar(): LinearLayout {
         return LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -148,6 +150,7 @@ class SettingsView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 创建分区标题
     private fun createSectionTitle(title: String): TextView {
         return TextView(context).apply {
             text = title.uppercase()
@@ -162,6 +165,7 @@ class SettingsView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 创建模型配置区域
     private fun createModelConfigSection(): View {
         val section = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -273,6 +277,7 @@ class SettingsView(context: Context) : FrameLayout(context) {
         return section
     }
 
+    // 创建系统提示词区域
     private fun createSystemPromptSection(): View {
         val section = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -415,6 +420,7 @@ class SettingsView(context: Context) : FrameLayout(context) {
         return section
     }
 
+    // 创建外观设置区域
     private fun createAppearanceSection(): View {
         val section = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -481,6 +487,7 @@ class SettingsView(context: Context) : FrameLayout(context) {
     private var webdavVisible = false
     private var statusText: TextView? = null
 
+    // 创建 WebDAV 备份区域
     private fun createWebDavSection(): View {
         val section = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -661,6 +668,7 @@ class SettingsView(context: Context) : FrameLayout(context) {
         return section
     }
 
+    // 测试 WebDAV 连接
     private fun testWebDavConnection() {
         statusText?.text = "测试中…"
         val backupMgr = com.tcc.data.BackupManager(context)
@@ -672,6 +680,7 @@ class SettingsView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 备份到 WebDAV
     private fun backupToWebDav() {
         statusText?.text = "备份中…"
         val backupMgr = com.tcc.data.BackupManager(context)
@@ -684,6 +693,7 @@ class SettingsView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 从 WebDAV 恢复
     private fun restoreFromWebDav() {
         statusText?.text = "恢复中…"
         val backupMgr = com.tcc.data.BackupManager(context)
@@ -696,6 +706,7 @@ class SettingsView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 导出到本地
     private fun exportLocal() {
         statusText?.text = "导出中…"
         val backupMgr = com.tcc.data.BackupManager(context)
@@ -707,6 +718,7 @@ class SettingsView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 创建配置按钮
     private fun createConfigButtons(): View {
         val container = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -733,6 +745,7 @@ class SettingsView(context: Context) : FrameLayout(context) {
         return container
     }
 
+    // 创建字段标签
     private fun createFieldLabel(text: String): TextView {
         return TextView(context).apply {
             this.text = text
@@ -745,6 +758,7 @@ class SettingsView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 加载配置到界面
     fun loadConfig() {
         val config = ConfigManager.getInstance(context)
         apiKeyInput?.setText(config.getApiKey())
@@ -797,6 +811,7 @@ class SettingsView(context: Context) : FrameLayout(context) {
         webdavPassInput?.setText(config.getWebDavPass())
     }
 
+    // 保存配置
     fun saveConfig() {
         try {
             val config = ConfigManager.getInstance(context)
@@ -828,6 +843,7 @@ class SettingsView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 显示 Toast 提示
     private fun showToast(message: String) {
         toastView?.let { removeView(it) }
 
@@ -875,6 +891,7 @@ class SettingsView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 刷新模板下拉框
     private fun refreshTemplateSpinner() {
         val templates = ConfigManager.getInstance(context).getPromptTemplates()
         val names = templates.map { it.first }

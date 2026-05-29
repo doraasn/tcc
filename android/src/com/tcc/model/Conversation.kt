@@ -4,6 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
 
+// 对话数据模型
 data class Conversation(
     val id: String = UUID.randomUUID().toString(),
     var title: String = "新对话",
@@ -13,6 +14,7 @@ data class Conversation(
 ) {
     val messages: MutableList<Message> = mutableListOf()
 
+    // 转为 JSON 对象
     fun toJson(): JSONObject {
         val msgArray = JSONArray()
         for (msg in messages) {
@@ -28,12 +30,14 @@ data class Conversation(
         }
     }
 
+    // 添加消息并更新时间戳
     fun addMessage(msg: Message) {
         messages.add(msg)
         updatedAt = System.currentTimeMillis()
     }
 
     companion object {
+        // 从 JSON 解析对话
         @JvmStatic
         fun fromJson(json: JSONObject): Conversation {
             val conv = Conversation(
@@ -55,6 +59,7 @@ data class Conversation(
             return conv
         }
 
+        // 从用户消息生成对话标题
         @JvmStatic
         fun generateTitle(messages: List<Message>): String {
             for (msg in messages) {

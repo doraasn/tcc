@@ -19,6 +19,7 @@ import android.widget.ListPopupWindow
 import android.widget.TextView
 import android.graphics.Color
 
+// 消息输入视图
 class MessageInputView(context: Context) : FrameLayout(context) {
 
     companion object {
@@ -152,14 +153,17 @@ class MessageInputView(context: Context) : FrameLayout(context) {
         addView(editText)
     }
 
+    // 设置发送消息回调
     fun setOnSendListener(callback: (String) -> Unit) {
         onSendListener = callback
     }
 
+    // 设置命令回调
     fun setOnCommandListener(callback: (String, String) -> Unit) {
         onCommandListener = callback
     }
 
+    // 启用/禁用输入框（流式时禁用）
     override fun setEnabled(enabled: Boolean) {
         editText.isEnabled = enabled
         editText.isFocusable = enabled
@@ -173,6 +177,7 @@ class MessageInputView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 设置输入框文本
     fun setText(text: String) {
         editText.setText(text)
         editText.setSelection(text.length)
@@ -180,10 +185,12 @@ class MessageInputView(context: Context) : FrameLayout(context) {
 
     fun getText(): String = editText.text.toString()
 
+    // 应用字体大小
     fun applyFontSize(size: Int) {
         editText.textSize = size.toFloat()
     }
 
+    // 显示命令补全弹窗
     private fun showCommandPopup() {
         if (commandPopup == null) {
             commandPopup = ListPopupWindow(context).apply {
@@ -226,6 +233,7 @@ class MessageInputView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 创建圆形背景
     private fun createCircleDrawable(color: Int): android.graphics.drawable.Drawable {
         return object : android.graphics.drawable.Drawable() {
             private val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
@@ -276,6 +284,7 @@ class MessageInputView(context: Context) : FrameLayout(context) {
         ).toInt()
     }
 
+    // 清理命令补全弹窗
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         commandPopup?.dismiss()

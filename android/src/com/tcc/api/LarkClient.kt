@@ -3,12 +3,14 @@ package com.tcc.api
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
+// lark-cli 命令行包装器
 object LarkClient {
 
     private val termuxBin = "/data/data/com.termux/files/usr/bin"
     private val larkCliPath = if (java.io.File("$termuxBin/lark-cli").canExecute())
         "$termuxBin/lark-cli" else "lark-cli"
 
+    // 检查 lark-cli 是否可用
     fun isAvailable(): Boolean {
         return try {
             val proc = Runtime.getRuntime().exec(arrayOf(larkCliPath, "--help"))
@@ -19,6 +21,7 @@ object LarkClient {
         }
     }
 
+    // 执行 lark-cli 命令
     fun execute(vararg args: String): String {
         val cmd = arrayOf(larkCliPath, *args)
         val pb = ProcessBuilder(*cmd)
@@ -51,6 +54,7 @@ object LarkClient {
         }
     }
 
+    // 检查 lark-cli 认证状态
     fun authStatus(): String {
         return try {
             execute("auth", "status")

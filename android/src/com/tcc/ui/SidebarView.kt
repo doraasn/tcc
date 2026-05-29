@@ -23,6 +23,7 @@ import android.text.Editable
 import android.text.TextWatcher
 import com.tcc.model.Conversation
 
+// 侧边栏视图
 class SidebarView(context: Context) : FrameLayout(context) {
 
     companion object {
@@ -101,11 +102,13 @@ class SidebarView(context: Context) : FrameLayout(context) {
         buildContent()
     }
 
+    // 获取状态栏高度
     private fun getStatusBarHeight(): Int {
         val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")
         return if (resourceId > 0) resources.getDimensionPixelSize(resourceId) else dp(24)
     }
 
+    // 构建侧边栏内容
     private fun buildContent() {
         // Title area
         val titleArea = LinearLayout(context).apply {
@@ -243,6 +246,7 @@ class SidebarView(context: Context) : FrameLayout(context) {
         contentView.addView(bottomSection)
     }
 
+    // 创建新对话按钮
     private fun createNewChatButton(): TextView {
         return TextView(context).apply {
             text = "新对话"
@@ -258,6 +262,7 @@ class SidebarView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 设置对话列表
     fun setConversations(convs: List<Conversation>) {
         allConversations = convs
         conversations = convs
@@ -269,11 +274,13 @@ class SidebarView(context: Context) : FrameLayout(context) {
         displayConversations(filtered)
     }
 
+    // 过滤对话
     private fun filterConversations(query: String) {
         searchQuery = query
         setConversations(allConversations)
     }
 
+    // 显示对话列表（按时间分组）
     private fun displayConversations(convs: List<Conversation>) {
         conversationContainer.removeAllViews()
         conversationItems.clear()
@@ -307,6 +314,7 @@ class SidebarView(context: Context) : FrameLayout(context) {
         updateActiveState()
     }
 
+    // 获取时间分组键（今天/昨天/更早）
     private fun getSectionKey(timestamp: Long, now: Long): String {
         val diff = now - timestamp
         return when {
@@ -316,17 +324,20 @@ class SidebarView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 设置当前选中对话
     fun setActiveId(id: String?) {
         activeId = id
         updateActiveState()
     }
 
+    // 更新选中状态
     private fun updateActiveState() {
         for (item in conversationItems) {
             item.setActive(item.conversation.id == activeId)
         }
     }
 
+    // 打开侧边栏
     fun open() {
         if (_isOpen) return
         _isOpen = true
@@ -346,6 +357,7 @@ class SidebarView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 关闭侧边栏
     fun close() {
         if (!_isOpen) return
         _isOpen = false
@@ -366,10 +378,12 @@ class SidebarView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 切换侧边栏
     fun toggle() {
         if (_isOpen) close() else open()
     }
 
+    // 应用字体大小
     fun applyFontSize(size: Int) {
         baseFontSize = size
         if (conversations.isNotEmpty()) {
@@ -407,7 +421,7 @@ class SidebarView(context: Context) : FrameLayout(context) {
         ).toInt()
     }
 
-    // Conversation item view
+    // 对话项视图
     private inner class ConversationItem(context: Context, val conversation: Conversation) : LinearLayout(context) {
         private val titleText = TextView(context)
         private val timeText = TextView(context)

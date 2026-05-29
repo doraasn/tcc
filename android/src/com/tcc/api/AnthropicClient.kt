@@ -10,6 +10,7 @@ import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
 
+// Anthropic(DeepSeek) API 流式聊天客户端
 class AnthropicClient {
 
     @Volatile
@@ -17,10 +18,12 @@ class AnthropicClient {
 
     private var doneSent = false
 
+    // 流式响应回调接口
     fun interface StreamCallback {
         fun onEvent(event: StreamEvent)
     }
 
+    // 流式事件密封类
     sealed class StreamEvent {
         data class Chunk(val text: String) : StreamEvent()
         data class ToolUse(val name: String, val input: String) : StreamEvent()
@@ -28,6 +31,7 @@ class AnthropicClient {
         data class Error(val message: String) : StreamEvent()
     }
 
+    // 发起流式聊天请求（SSE 协议）
     fun streamChat(
         messages: List<Message>,
         systemPrompt: String?,
@@ -111,10 +115,12 @@ class AnthropicClient {
         }.start()
     }
 
+    // 中止请求
     fun abort() {
         aborted = true
     }
 
+    // 构建 API 请求体
     private fun buildRequestBody(
         messages: List<Message>,
         systemPrompt: String?,
@@ -146,6 +152,7 @@ class AnthropicClient {
         return body
     }
 
+    // 处理 SSE 流式事件
     private fun handleStreamEvent(json: JSONObject, callback: StreamCallback) {
         val type = json.optString("type", "")
 

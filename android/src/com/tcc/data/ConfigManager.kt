@@ -4,6 +4,7 @@ import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
 
+// 配置管理器 - 读写 SharedPreferences
 class ConfigManager private constructor(context: Context) {
 
     private val prefs = context.getSharedPreferences("mcc_config", Context.MODE_PRIVATE)
@@ -36,6 +37,7 @@ class ConfigManager private constructor(context: Context) {
     fun getWebDavPass(): String = prefs.getString("webdav_pass", "") ?: ""
     fun setWebDavPass(value: String) { prefs.edit().putString("webdav_pass", value).apply() }
 
+    // 获取所有配置
     fun getAll(): JSONObject {
         return JSONObject().apply {
             put("api_key", getApiKey())
@@ -50,6 +52,7 @@ class ConfigManager private constructor(context: Context) {
         }
     }
 
+    // 从 JSON 更新配置
     fun updateFromJson(json: JSONObject) {
         val editor = prefs.edit()
         if (json.has("api_key")) editor.putString("api_key", json.optString("api_key", ""))
@@ -71,6 +74,7 @@ class ConfigManager private constructor(context: Context) {
         }
     }
 
+    // 获取提示词模板列表
     fun getPromptTemplates(): List<Pair<String, String>> {
         val result = mutableListOf<Pair<String, String>>()
         val raw = getPromptTemplatesRaw()
@@ -87,6 +91,7 @@ class ConfigManager private constructor(context: Context) {
         return result
     }
 
+    // 保存提示词模板
     fun savePromptTemplate(name: String, content: String) {
         val raw = getPromptTemplatesRaw()
         // Replace existing entry with same name, or append
@@ -108,6 +113,7 @@ class ConfigManager private constructor(context: Context) {
         prefs.edit().putString("prompt_templates", raw.toString()).apply()
     }
 
+    // 删除提示词模板
     fun deletePromptTemplate(name: String) {
         val raw = getPromptTemplatesRaw()
         val updated = JSONArray()
@@ -120,6 +126,7 @@ class ConfigManager private constructor(context: Context) {
         prefs.edit().putString("prompt_templates", updated.toString()).apply()
     }
 
+    // 获取原始模板 JSON
     private fun getPromptTemplatesRaw(): JSONArray {
         val json = prefs.getString("prompt_templates", "[]") ?: "[]"
         return try {
@@ -133,6 +140,7 @@ class ConfigManager private constructor(context: Context) {
         @Volatile
         private var instance: ConfigManager? = null
 
+        // 获取单例实例
         @JvmStatic
         fun getInstance(context: Context): ConfigManager {
             return instance ?: synchronized(this) {

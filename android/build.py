@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
+# 标准库导入
 import os, struct, zipfile, subprocess, shutil
 
+# 基础路径与常量定义
 BASE = os.path.dirname(os.path.abspath(__file__))
 ANDROID_JAR = os.path.join(BASE, 'android-35', 'android.jar')
 OUT = os.path.join(BASE, 'dist')
 BUILD = os.path.join(BASE, 'build')
 ANDROID_NS = 'http://schemas.android.com/apk/res/android'
 
+# AXML 二进制 XML 写入器
 class AXMLWriter:
     def __init__(self):
+        # 初始化字符串池
         self.strings = []
         self.str_map = {}
 
+    # 注册字符串并返回索引
     def get_str(self, s):
         if s is None: return 0xFFFFFFFF
         if s not in self.str_map:
@@ -19,6 +24,7 @@ class AXMLWriter:
             self.strings.append(s)
         return self.str_map[s]
 
+    # 写入字符串池（UTF-16 编码）
     def write_pool(self):
         # UTF-16 string pool: each entry = charCount(2) + utf16le_data(2*count) + null(2)
         offsets, data = [], b''
@@ -37,11 +43,13 @@ class AXMLWriter:
         ch += data
         return ch
 
+    # 写入资源 ID 映射表
     def write_map(self, ids):
         ch = struct.pack('<HHI', 0x0180, 8, 8 + len(ids) * 4)
         for rid in ids: ch += struct.pack('<I', rid)
         return ch
 
+    # 写入 XML 开始标签
     def write_tag(self, name, attrs):
         na = len(attrs)
         ch = struct.pack('<HHIii', 0x0102, 16, 36 + na * 20, 0, -1)
@@ -60,12 +68,15 @@ class AXMLWriter:
                 ch += struct.pack('<HBB', 8, 0, vt) + struct.pack('<I', vd)
         return ch
 
+    # 写入 XML 结束标签
     def write_end(self, name):
         return struct.pack('<HHIiiiI', 0x0103, 16, 24, 0, -1, -1, self.get_str(name))
 
+    # 写入命名空间声明（开始/结束）
     def write_ns(self, typ, a, b):
         return struct.pack('<HHIiiII', typ, 16, 24, 0, -1, a, b)
 
+    # 构建完整的 AndroidManifest.xml 二进制文件
     def build(self):
         # CRITICAL: All android-namespace ATTRIBUTE NAME strings must come FIRST
         # (before element names, values, etc.) so RES_MAP entries align correctly
@@ -126,15 +137,18 @@ class AXMLWriter:
             self.write_ns(0x0101, self.get_str('android'), self.get_str(ANDROID_NS)))
         return struct.pack('<HHI', 0x0003, 8, 8 + len(hdr)) + hdr
 
-# Build APK
+# 构建 APK
 def build():
+    # 创建输出和构建目录
     os.makedirs(OUT, exist_ok=True); os.makedirs(BUILD, exist_ok=True)
+    # 收集所有 Kotlin 源文件
     src = []
     for r, d, f in os.walk(os.path.join(BASE, 'src')):
         for fn in f:
             if fn.endswith('.kt'): src.append(os.path.join(r, fn))
     if not src: print("No Kotlin sources!"); return
 
+    # 编译 Kotlin 源码
     print(f"  Compiling {len(src)} Kotlin files...")
     cls = os.path.join(BUILD, 'classes')
     if os.path.exists(cls): shutil.rmtree(cls)
@@ -142,6 +156,7 @@ def build():
     subprocess.run(['kotlinc', '-cp', ANDROID_JAR, '-d', cls] + src,
                    check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
+    # 转换为 DEX 字节码
     print("  Converting to DEX...")
     dx = os.path.join(BUILD, 'dex')
     if os.path.exists(dx): shutil.rmtree(dx)
@@ -155,11 +170,13 @@ def build():
                     '--lib', ANDROID_JAR] + cf + [kt],
                    check=True, stderr=subprocess.DEVNULL)
 
+    # 生成二进制 AndroidManifest.xml
     print("  Generating AndroidManifest.xml...")
     axml = AXMLWriter().build()
     with open(os.path.join(BUILD, 'AndroidManifest.xml'), 'wb') as f:
         f.write(axml)
 
+    # 打包 APK（ZIP 格式）
     print("  Creating APK...")
     apk = os.path.join(OUT, 'TCC.apk')
     with zipfile.ZipFile(apk, 'w', zipfile.ZIP_DEFLATED) as z:
@@ -170,7 +187,13 @@ def build():
         for dfn in [os.path.join(dx, 'classes.dex')] if os.path.exists(os.path.join(dx, 'classes.dex')) else []:
             with open(dfn, 'rb') as f:
                 z.writestr('classes.dex', f.read(), compress_type=zipfile.ZIP_STORED)
+        # 嵌入 Termux 完整环境（Node.js + Claude Code）
+        bs_path = os.path.join(BASE, 'assets', 'termux-bundle.tar.gz')
+        if os.path.exists(bs_path):
+            with open(bs_path, 'rb') as f:
+                z.writestr('assets/termux-bundle.tar.gz', f.read(), compress_type=zipfile.ZIP_DEFLATED)
 
+    # 签名 APK
     print("  Signing...")
     ks = os.path.join(BASE, 'debug.keystore')
     if not os.path.exists(ks):
@@ -186,5 +209,6 @@ def build():
     sz = os.path.getsize(apk)
     print(f"\n  TCC APK build complete!  Size: {sz//1024} KB  Package: com.tcc\n")
 
+# 入口点
 if __name__ == '__main__':
     build()

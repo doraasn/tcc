@@ -20,6 +20,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import com.tcc.model.Message
 
+// 聊天消息列表视图
 class ChatListView(context: Context) : ScrollView(context) {
 
     companion object {
@@ -62,12 +63,14 @@ class ChatListView(context: Context) : ScrollView(context) {
         showEmptyState()
     }
 
+    // 设置消息列表
     fun setMessages(msgs: List<Message>) {
         messages.clear()
         messages.addAll(msgs)
         rebuildMessageViews()
     }
 
+    // 添加新消息
     fun addMessage(msg: Message) {
         messages.add(msg)
         removeEmptyState()
@@ -78,6 +81,7 @@ class ChatListView(context: Context) : ScrollView(context) {
         }
     }
 
+    // 更新最后一条消息（流式更新）
     fun updateLastMessage(msg: Message) {
         if (messages.isNotEmpty()) {
             messages[messages.size - 1] = msg
@@ -94,14 +98,17 @@ class ChatListView(context: Context) : ScrollView(context) {
         }
     }
 
+    // 滚动到底部
     fun scrollToBottom() {
         post { fullScroll(View.FOCUS_DOWN) }
     }
 
+    // 设置建议点击回调
     fun setOnSuggestionClick(callback: (String) -> Unit) {
         onSuggestionClick = callback
     }
 
+    // 应用字体大小
     fun applyFontSize(size: Int) {
         baseFontSize = size
         if (messages.isNotEmpty()) {
@@ -111,6 +118,7 @@ class ChatListView(context: Context) : ScrollView(context) {
         }
     }
 
+    // 显示空状态（logo + 建议卡片）
     private fun showEmptyState() {
         container.removeAllViews()
         messages.clear()
@@ -169,6 +177,7 @@ class ChatListView(context: Context) : ScrollView(context) {
         container.addView(wrapper)
     }
 
+    // 创建建议卡片
     private fun createSuggestionCard(label: String): TextView {
         return TextView(context).apply {
             text = label
@@ -188,12 +197,14 @@ class ChatListView(context: Context) : ScrollView(context) {
         }
     }
 
+    // 移除空状态
     private fun removeEmptyState() {
         if (messages.isEmpty() && container.childCount == 1) {
             container.removeAllViews()
         }
     }
 
+    // 重建消息视图
     private fun rebuildMessageViews() {
         container.removeAllViews()
         if (messages.isEmpty()) {
@@ -206,6 +217,7 @@ class ChatListView(context: Context) : ScrollView(context) {
         post { fullScroll(View.FOCUS_DOWN) }
     }
 
+    // 添加消息视图
     private fun addMessageView(msg: Message) {
         val bubble = MessageBubble(context)
         val content = renderContent(msg.content, msg.isStreaming)
@@ -231,6 +243,7 @@ class ChatListView(context: Context) : ScrollView(context) {
         container.addView(bubble, params)
     }
 
+    // 渲染消息内容（支持 Markdown 语法高亮）
     private fun renderContent(text: String, streaming: Boolean): SpannableStringBuilder {
         val sb = SpannableStringBuilder()
         var i = 0
@@ -384,6 +397,7 @@ class ChatListView(context: Context) : ScrollView(context) {
         return sb
     }
 
+    // 创建圆角背景
     private fun createRoundedDrawable(color: Int, radius: Int): android.graphics.drawable.Drawable {
         return object : android.graphics.drawable.Drawable() {
             private val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
@@ -414,7 +428,7 @@ class ChatListView(context: Context) : ScrollView(context) {
         ).toInt()
     }
 
-    // Custom MessageBubble view
+    // 消息气泡内嵌视图
     private inner class MessageBubble(context: Context) : LinearLayout(context) {
         private val contentText = TextView(context)
         private val timeText = TextView(context)

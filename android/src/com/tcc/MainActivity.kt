@@ -29,12 +29,15 @@ import com.tcc.ui.MessageInputView
 import com.tcc.ui.SettingsView
 import com.tcc.ui.SidebarView
 import com.tcc.ui.SystemStatusView
+import com.tcc.TermuxBootstrap
 import com.tcc.ui.LarkToolsView
 import com.tcc.ui.ShellView
 
+// TCC 主界面 - 管理所有视图和事件
 class MainActivity : Activity() {
 
     companion object {
+        // 颜色和日志常量定义
         private const val TAG = "TCC"
         private const val BG = 0xFF0A0A0B.toInt()
         private const val SURFACE = 0xFF141416.toInt()
@@ -65,6 +68,7 @@ class MainActivity : Activity() {
     private val mainHandler = Handler(Looper.getMainLooper())
     private var isFirstMessage = true
 
+    // 应用入口 - 初始化界面和加载设置
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -125,6 +129,13 @@ class MainActivity : Activity() {
         applyFontSizeToViews()
         loadConversations()
 
+        // Auto-extract Termux bootstrap on first launch
+        if (!TermuxBootstrap.isInstalled(this)) {
+            Thread {
+                TermuxBootstrap.install(this, null)
+            }.start()
+        }
+
         if (config.getApiKey().isEmpty()) {
             showToast("请先在设置中配置 API Key")
             settings.visibility = View.VISIBLE
@@ -132,6 +143,7 @@ class MainActivity : Activity() {
         }
     }
 
+    // 创建顶部标题栏
     private fun createTopBar(): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -140,7 +152,7 @@ class MainActivity : Activity() {
             setPadding(dp(8), dp(0), dp(16), dp(0))
             elevation = 4f
 
-            // Hamburger button (custom 3-line icon)
+            // 创建汉堡菜单按钮
             val hamburger = object : View(this@MainActivity) {
                 private val paint = android.graphics.Paint().apply {
                     color = TEXT_PRIMARY
@@ -188,8 +200,9 @@ class MainActivity : Activity() {
         }
     }
 
+    // 设置所有回调事件
     private fun setupCallbacks() {
-        // Sidebar conversation select
+        // 侧边栏选择对话
         sidebar.onConversationSelect = { id ->
             if (id.startsWith("__delete__")) {
                 val convId = id.removePrefix("__delete__")
@@ -264,6 +277,7 @@ class MainActivity : Activity() {
         }
     }
 
+    // 加载对话列表
     private fun loadConversations() {
         try {
             val convs = convManager.listConversations()
@@ -279,6 +293,7 @@ class MainActivity : Activity() {
         }
     }
 
+    // 切换到指定对话
     private fun switchConversation(id: String) {
         // Save current conversation if needed
         saveCurrentConversation()
@@ -307,6 +322,7 @@ class MainActivity : Activity() {
         }
     }
 
+    // 保存当前对话
     private fun saveCurrentConversation() {
         currentConv?.let { conv ->
             try {
@@ -317,6 +333,7 @@ class MainActivity : Activity() {
         }
     }
 
+    // 创建新对话
     private fun newConversation() {
         saveCurrentConversation()
 
@@ -337,6 +354,7 @@ class MainActivity : Activity() {
         }
     }
 
+    // 删除对话
     private fun deleteConversation(id: String) {
         try {
             convManager.deleteConversation(id)
@@ -354,6 +372,7 @@ class MainActivity : Activity() {
         }
     }
 
+    // 发送消息入口（带异常兜底）
     private fun sendMessage(text: String) {
         try {
             sendMessageInternal(text)
@@ -369,6 +388,7 @@ class MainActivity : Activity() {
         }
     }
 
+    // 发送消息到 AI API（流式）
     private fun sendMessageInternal(text: String) {
         if (text.isBlank()) return
 
@@ -431,6 +451,7 @@ class MainActivity : Activity() {
         )
     }
 
+    // 处理流式响应事件
     private fun handleStreamEvent(event: StreamEvent) {
         when (event) {
             is StreamEvent.Chunk -> {
@@ -498,6 +519,7 @@ class MainActivity : Activity() {
         }
     }
 
+    // 处理流式错误
     private fun handleStreamError(error: String) {
         Log.e(TAG, "Stream error: $error")
         try { File("/sdcard/Download/mcc_error.txt").writeText("Stream error: $error") } catch (_: Exception) {}
@@ -526,6 +548,7 @@ class MainActivity : Activity() {
         convManager.saveConversation(conv)
     }
 
+    // 自动生成对话标题
     private fun autoTitleConversation(conv: Conversation) {
         // Generate a title from the first user message
         val firstUserMsg = conv.messages.find { it.role == "user" }
@@ -545,6 +568,7 @@ class MainActivity : Activity() {
         }
     }
 
+    // 处理斜杠命令
     private fun sendCommand(cmd: String, args: String?) {
         when {
             cmd == "/clear" -> {
@@ -630,6 +654,7 @@ class MainActivity : Activity() {
         rootView.requestLayout()
     }
 
+    // 处理返回键（按优先级关闭各面板）
     override fun onBackPressed() {
         when {
             larkTools.visibility == View.VISIBLE -> {
@@ -653,11 +678,13 @@ class MainActivity : Activity() {
         }
     }
 
+    // 暂停时保存对话
     override fun onPause() {
         super.onPause()
         saveCurrentConversation()
     }
 
+    // 销毁时清理资源
     override fun onDestroy() {
         anthropicClient?.abort()
         anthropicClient = null
@@ -665,6 +692,7 @@ class MainActivity : Activity() {
         super.onDestroy()
     }
 
+    // 应用字体大小设置
     private fun applyFontSizeToViews() {
         val size = config.getFontSize()
         chatList.applyFontSize(size)
@@ -674,10 +702,12 @@ class MainActivity : Activity() {
         topBarModel.textSize = (size - 2).toFloat()
     }
 
+    // 显示 Toast 提示
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
+    // dp 转像素
     private fun dp(value: Int): Int {
         return TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP,

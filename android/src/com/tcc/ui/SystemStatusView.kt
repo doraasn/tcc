@@ -14,6 +14,7 @@ import android.widget.TextView
 import com.tcc.api.LarkClient
 import java.io.File
 
+// 系统状态视图
 class SystemStatusView(context: Context) : FrameLayout(context) {
 
     companion object {
@@ -92,6 +93,7 @@ class SystemStatusView(context: Context) : FrameLayout(context) {
         addView(rootLayout)
     }
 
+    // 创建顶部栏
     private fun createTopBar(): LinearLayout {
         return LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -123,6 +125,7 @@ class SystemStatusView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 创建分区标题
     private fun createSectionTitle(title: String): TextView {
         return TextView(context).apply {
             text = title.uppercase()
@@ -137,6 +140,7 @@ class SystemStatusView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 创建状态行（名称 + 圆点 + 文本）
     private fun createStatusRow(name: String, dot: View, statusText: TextView): View {
         return LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -161,6 +165,7 @@ class SystemStatusView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 创建状态指示圆点
     private fun createStatusDot(): View {
         return View(context).apply {
             layoutParams = LinearLayout.LayoutParams(dp(10), dp(10))
@@ -168,6 +173,7 @@ class SystemStatusView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 创建环境检测区域
     private fun createEnvironmentSection(): View {
         val section = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -207,6 +213,7 @@ class SystemStatusView(context: Context) : FrameLayout(context) {
         return section
     }
 
+    // 创建状态标签
     private fun createStatusLabel(text: String): TextView {
         return TextView(context).apply {
             this.text = text
@@ -217,6 +224,7 @@ class SystemStatusView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 创建存储空间区域
     private fun createStorageSection(): View {
         val section = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -241,6 +249,7 @@ class SystemStatusView(context: Context) : FrameLayout(context) {
         return section
     }
 
+    // 创建存储信息行
     private fun createStorageRow(label: String): Pair<View, TextView> {
         val valueText = TextView(context).apply {
             text = "计算中…"
@@ -270,6 +279,7 @@ class SystemStatusView(context: Context) : FrameLayout(context) {
         return Pair(row, valueText)
     }
 
+    // 创建 Lark 认证状态区域
     private fun createLarkAuthSection(): View {
         val section = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -292,6 +302,7 @@ class SystemStatusView(context: Context) : FrameLayout(context) {
         return section
     }
 
+    // 创建刷新按钮
     private fun createRefreshButton(): View {
         val container = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -318,17 +329,20 @@ class SystemStatusView(context: Context) : FrameLayout(context) {
         return container
     }
 
+    // 刷新所有状态
     fun refresh() {
         checkEnvironment()
         checkStorage()
         checkLarkAuth()
     }
 
+    // 附加到窗口时自动刷新
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         refresh()
     }
 
+    // 检查环境（Node.js/glibc/lark-cli/Claude Code/proot）
     private fun checkEnvironment() {
         Thread {
             // Node.js
@@ -348,6 +362,7 @@ class SystemStatusView(context: Context) : FrameLayout(context) {
         }.start()
     }
 
+    // 检查命令是否可用
     private fun checkCommand(command: String, arg: String, dot: View?, statusText: TextView?) {
         try {
             val proc = Runtime.getRuntime().exec(arrayOf(command, arg))
@@ -374,6 +389,7 @@ class SystemStatusView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 检查 libc 库是否存在
     private fun checkLibcFile(dot: View?, statusText: TextView?) {
         val found = LIBC_PATHS.any { File(it).exists() }
         postOnUi {
@@ -389,6 +405,7 @@ class SystemStatusView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 检查 lark-cli 是否可用
     private fun checkLarkCliAvailable() {
         val available = LarkClient.isAvailable()
         postOnUi {
@@ -404,6 +421,7 @@ class SystemStatusView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 检查存储空间
     private fun checkStorage() {
         try {
             val freeBytes = File("/").freeSpace
@@ -424,6 +442,7 @@ class SystemStatusView(context: Context) : FrameLayout(context) {
         }
     }
 
+    // 检查 Lark 认证状态
     private fun checkLarkAuth() {
         Thread {
             val status = LarkClient.authStatus()
@@ -438,6 +457,7 @@ class SystemStatusView(context: Context) : FrameLayout(context) {
         }.start()
     }
 
+    // 在主线程执行操作
     private fun postOnUi(action: () -> Unit) {
         android.os.Handler(context.mainLooper).post(action)
     }

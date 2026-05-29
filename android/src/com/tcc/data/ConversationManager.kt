@@ -7,6 +7,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 
+// 对话管理器 - 增删改查持久化
 class ConversationManager private constructor(context: Context) {
 
     private val convDir: File = File(context.filesDir, "conversations")
@@ -16,6 +17,7 @@ class ConversationManager private constructor(context: Context) {
         convDir.mkdirs()
     }
 
+    // 列出所有对话摘要（按更新时间倒序）
     fun listConversations(): List<Conversation> {
         val jsonArray = readIndex()
         val result = mutableListOf<Conversation>()
@@ -36,6 +38,7 @@ class ConversationManager private constructor(context: Context) {
         return result
     }
 
+    // 获取完整对话（含消息）
     fun getConversation(id: String): Conversation? {
         val file = File(convDir, "${id}.json")
         if (!file.exists()) return null
@@ -47,6 +50,7 @@ class ConversationManager private constructor(context: Context) {
         }
     }
 
+    // 创建新对话
     @Synchronized
     fun createConversation(model: String): Conversation {
         val conv = Conversation(model = model)
@@ -54,6 +58,7 @@ class ConversationManager private constructor(context: Context) {
         return conv
     }
 
+    // 删除对话
     @Synchronized
     fun deleteConversation(id: String) {
         val file = File(convDir, "${id}.json")
@@ -61,6 +66,7 @@ class ConversationManager private constructor(context: Context) {
         removeFromIndex(id)
     }
 
+    // 删除所有对话
     @Synchronized
     fun deleteAllConversations() {
         val files = convDir.listFiles()
@@ -75,6 +81,7 @@ class ConversationManager private constructor(context: Context) {
         writeIndex(JSONArray())
     }
 
+    // 保存对话到文件
     @Synchronized
     fun saveConversation(conv: Conversation) {
         val file = File(convDir, "${conv.id}.json")
@@ -88,6 +95,7 @@ class ConversationManager private constructor(context: Context) {
         updateIndex(conv)
     }
 
+    // 添加消息到对话
     @Synchronized
     fun addMessage(convId: String, msg: Message) {
         val conv = getConversation(convId) ?: return
@@ -95,6 +103,7 @@ class ConversationManager private constructor(context: Context) {
         saveConversation(conv)
     }
 
+    // 更新对话中的消息
     @Synchronized
     fun updateMessage(convId: String, index: Int, msg: Message) {
         val conv = getConversation(convId) ?: return
@@ -105,6 +114,7 @@ class ConversationManager private constructor(context: Context) {
         }
     }
 
+    // 更新对话索引
     private fun updateIndex(conv: Conversation) {
         val jsonArray = readIndex()
         var found = false
@@ -133,6 +143,7 @@ class ConversationManager private constructor(context: Context) {
         writeIndex(jsonArray)
     }
 
+    // 从索引中移除
     private fun removeFromIndex(id: String) {
         val jsonArray = readIndex()
         val updated = JSONArray()
@@ -145,6 +156,7 @@ class ConversationManager private constructor(context: Context) {
         writeIndex(updated)
     }
 
+    // 读取对话索引文件
     private fun readIndex(): JSONArray {
         if (!indexFile.exists()) return JSONArray()
         return try {
@@ -159,6 +171,7 @@ class ConversationManager private constructor(context: Context) {
         }
     }
 
+    // 写入对话索引文件
     private fun writeIndex(jsonArray: JSONArray) {
         try {
             indexFile.writeText(jsonArray.toString())
@@ -172,6 +185,7 @@ class ConversationManager private constructor(context: Context) {
         @Volatile
         private var instance: ConversationManager? = null
 
+        // 获取单例实例
         @JvmStatic
         fun getInstance(context: Context): ConversationManager {
             return instance ?: synchronized(this) {
