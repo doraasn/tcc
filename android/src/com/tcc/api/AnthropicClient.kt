@@ -1,3 +1,4 @@
+// @Deprecated - 已替换为 ClaudeCli.kt，使用 Claude Code CLI 替代 HTTP API
 package com.tcc.api
 
 import com.tcc.data.ConfigManager

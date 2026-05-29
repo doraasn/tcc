@@ -10,7 +10,8 @@ data class Conversation(
     var title: String = "新对话",
     val model: String = "deepseek-v4-flash",
     val createdAt: Long = System.currentTimeMillis(),
-    var updatedAt: Long = System.currentTimeMillis()
+    var updatedAt: Long = System.currentTimeMillis(),
+    var claudeSessionId: String? = null
 ) {
     val messages: MutableList<Message> = mutableListOf()
 
@@ -26,6 +27,7 @@ data class Conversation(
             put("model", model)
             put("createdAt", createdAt)
             put("updatedAt", updatedAt)
+            put("claudeSessionId", claudeSessionId ?: "")
             put("messages", msgArray)
         }
     }
@@ -45,7 +47,8 @@ data class Conversation(
                 title = json.optString("title", "新对话"),
                 model = json.optString("model", "deepseek-v4-flash"),
                 createdAt = json.optLong("createdAt", System.currentTimeMillis()),
-                updatedAt = json.optLong("updatedAt", System.currentTimeMillis())
+                updatedAt = json.optLong("updatedAt", System.currentTimeMillis()),
+                claudeSessionId = json.optString("claudeSessionId", "").ifEmpty { null }
             )
             val msgArray = json.optJSONArray("messages")
             if (msgArray != null) {

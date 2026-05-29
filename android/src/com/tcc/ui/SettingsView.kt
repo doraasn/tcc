@@ -49,12 +49,9 @@ class SettingsView(context: Context) : FrameLayout(context) {
     private var templateSpinner: Spinner? = null
 
     private val modelOptions = listOf(
-        "deepseek-v4-flash",
-        "deepseek-v4",
+        "默认 (Claude CLI 配置)",
         "claude-sonnet-4-20250514",
-        "claude-opus-4-20250514",
-        "claude-haiku-4-20250514",
-        "gemini-2.5-flash"
+        "claude-opus-4-20250514"
     )
 
     init {
@@ -178,7 +175,7 @@ class SettingsView(context: Context) : FrameLayout(context) {
         }
 
         // API Key
-        val apiKeyLabel = createFieldLabel("API Key")
+        val apiKeyLabel = createFieldLabel("Anthropic API Key")
         section.addView(apiKeyLabel)
 
         val apiKeyRow = LinearLayout(context).apply {
@@ -221,11 +218,12 @@ class SettingsView(context: Context) : FrameLayout(context) {
         apiKeyRow.addView(toggleEye)
         section.addView(apiKeyRow)
 
-        // Base URL
-        val baseUrlLabel = createFieldLabel("Base URL")
+        // Base URL (hidden for CLI mode)
+        val baseUrlLabel = createFieldLabel("Base URL").apply { visibility = GONE }
         section.addView(baseUrlLabel)
 
         baseUrlInput = EditText(context).apply {
+            visibility = GONE
             hint = "https://api.anthropic.com"
             setHintTextColor(TEXT_TERTIARY)
             setTextColor(TEXT_PRIMARY)
@@ -762,7 +760,6 @@ class SettingsView(context: Context) : FrameLayout(context) {
     fun loadConfig() {
         val config = ConfigManager.getInstance(context)
         apiKeyInput?.setText(config.getApiKey())
-        baseUrlInput?.setText(config.getBaseUrl())
 
         val model = config.getModel()
         val modelIndex = modelOptions.indexOfFirst { it.equals(model, ignoreCase = true) }
@@ -816,7 +813,6 @@ class SettingsView(context: Context) : FrameLayout(context) {
         try {
             val config = ConfigManager.getInstance(context)
             val apiKey = apiKeyInput?.text?.toString()?.trim() ?: ""
-            val baseUrl = baseUrlInput?.text?.toString()?.trim() ?: ""
             val model = if (modelSpinner?.selectedItem != null) {
                 modelSpinner?.selectedItem.toString()
             } else {
@@ -829,7 +825,6 @@ class SettingsView(context: Context) : FrameLayout(context) {
             val webdavPass = webdavPassInput?.text?.toString()?.trim() ?: ""
 
             config.setApiKey(apiKey)
-            config.setBaseUrl(baseUrl)
             config.setModel(model)
             config.setSystemPrompt(systemPrompt)
             config.setFontSize(fontSize)

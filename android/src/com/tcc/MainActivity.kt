@@ -15,11 +15,11 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import android.util.Log
-import com.tcc.api.AnthropicClient
+import com.tcc.api.ClaudeCli
 import java.io.File
 import java.io.PrintWriter
 import java.io.StringWriter
-import com.tcc.api.AnthropicClient.StreamEvent
+import com.tcc.api.ClaudeCli.StreamEvent
 import com.tcc.data.ConfigManager
 import com.tcc.data.ConversationManager
 import com.tcc.model.Conversation
@@ -63,8 +63,9 @@ class MainActivity : Activity() {
     private val config by lazy { ConfigManager.getInstance(this) }
     private val convManager by lazy { ConversationManager.getInstance(this) }
     private var currentConv: Conversation? = null
-    private var anthropicClient: AnthropicClient? = null
+    private var claudeCli: ClaudeCli? = null
     private var isStreaming = false
+    private var currentSessionId: String? = null
     private val mainHandler = Handler(Looper.getMainLooper())
     private var isFirstMessage = true
 
@@ -408,6 +409,13 @@ class MainActivity : Activity() {
         val model = config.getModel().ifBlank { "claude-sonnet-4-20250514" }
         Log.d(TAG, "Sending message: model=$model, baseUrl=${config.getBaseUrl()}, keyLen=${config.getApiKey().length}")
 
+        // 检查 Termux 环境是否就绪
+        if (!TermuxBootstrap.isInstalled(this)) {
+            showToast("环境准备中，请稍候…")
+            Log.w(TAG, "Termux bootstrap not ready, aborting send")
+            return
+        }
+
         // Create user message
         val userMsg = Message(
             role = "user",
@@ -436,12 +444,14 @@ class MainActivity : Activity() {
         // Build message list for API
         val systemPrompt = config.getSystemPrompt()
 
-        anthropicClient = AnthropicClient()
-        anthropicClient?.streamChat(
+        // 创建 Claude CLI 客户端，传入会话 ID 以维持上下文
+        claudeCli = ClaudeCli(this)
+        claudeCli?.sessionId = currentSessionId
+        claudeCli?.streamChat(
             messages = conv.messages.filter { !it.isStreaming },
             systemPrompt = systemPrompt,
             config = config,
-            callback = object : AnthropicClient.StreamCallback {
+            callback = object : ClaudeCli.StreamCallback {
                 override fun onEvent(event: StreamEvent) {
                     mainHandler.post {
                         handleStreamEvent(event)
@@ -469,25 +479,12 @@ class MainActivity : Activity() {
                 }
             }
 
-            is StreamEvent.ToolUse -> {
-                val conv = currentConv ?: return
-                val msgs = conv.messages
-                val lastIndex = msgs.size - 1
-                if (lastIndex >= 0 && msgs[lastIndex].role == "assistant") {
-                    val lastMsg = msgs[lastIndex]
-                    val toolText = "\n\n[使用工具: ${event.name}]"
-                    val updatedMsg = lastMsg.copy(
-                        content = lastMsg.content + toolText,
-                        isStreaming = true
-                    )
-                    msgs[lastIndex] = updatedMsg
-                    chatList.updateLastMessage(updatedMsg)
-                }
-            }
-
             is StreamEvent.Done -> {
                 isStreaming = false
-                anthropicClient = null
+
+                // 保存 Claude 会话 ID 用于对话连续性
+                currentSessionId = claudeCli?.sessionId
+                claudeCli = null
 
                 val conv = currentConv ?: return
                 val msgs = conv.messages
@@ -524,8 +521,8 @@ class MainActivity : Activity() {
         Log.e(TAG, "Stream error: $error")
         try { File("/sdcard/Download/mcc_error.txt").writeText("Stream error: $error") } catch (_: Exception) {}
         isStreaming = false
-        anthropicClient?.abort()
-        anthropicClient = null
+        claudeCli?.abort()
+        claudeCli = null
         input.isEnabled = true
         showToast("错误: $error")
 
@@ -686,8 +683,8 @@ class MainActivity : Activity() {
 
     // 销毁时清理资源
     override fun onDestroy() {
-        anthropicClient?.abort()
-        anthropicClient = null
+        claudeCli?.abort()
+        claudeCli = null
         saveCurrentConversation()
         super.onDestroy()
     }
