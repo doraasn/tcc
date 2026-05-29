@@ -1,0 +1,35 @@
+# Build outputs
+android/dist/
+android/build/
+android/__pycache__/
+android/debug.keystore
+
+# Android SDK
+android/android-35/
+
+# Build intermediates
+android/aapt_build/
+*.class
+*.bin
+*.jar
+
+# Temporary / intermediate directories
+apktool-work/
+tmp_cls/
+tmp_d3/
+tmp_d4/
+tmp_decode/
+tmp_decode2/
+tmp_final/
+tmp_patched/
+tmp_tmpl/
+minimal-test/
+template-test/
+
+# APK files (built artifacts)
+*.apk
+*.idsig
+
+# IDE
+.idea/
+*.iml
