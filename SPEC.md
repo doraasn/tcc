@@ -210,3 +210,97 @@ BORDER = 0xFF2A2A2E.toInt()
 - [ ] 多 DEX (classes2.dex) 不支持
 - [ ] 本地导出按钮 UI (SettingsView) 已加但未验证
 - [ ] 符号链接的回退复制未实现
+
+---
+
+## 五、AI 开发操作手册
+
+### 项目文件结构
+```
+tcc/                              ← Git 仓库根目录 (/data/data/com.termux/files/home/tcc)
+├── SPEC.md                       ← 本文件
+├── .gitignore                    ← 排除 APK/bundle/SDK/tmp
+├── android/                      ← Android 项目根目录
+│   ├── build.py                  ← 主构建脚本 (Kotlin编译→DEX→AXML→APK→签名)
+│   ├── bundle.sh                 ← 生成 Termux 环境包 (bash bundle.sh)
+│   ├── debug.keystore            ← APK 签名密钥 (password: android)
+│   ├── AndroidManifest.xml       ← 源码清单 (仅供 aapt 参考, build.py 不读它)
+│   ├── assets/
+│   │   └── termux-bundle.tar.gz  ← [需手动生成] Termux 完整环境包 (277MB)
+│   ├── src/com/tcc/              ← Kotlin 源码主目录 (16 个 .kt 文件)
+│   │   ├── MainActivity.kt       ← 主控制器 (init/setup/send/commands)
+│   │   ├── TermuxBootstrap.kt    ← 环境安装 (Gzip解压+tar解析+chmod)
+│   │   ├── api/
+│   │   │   ├── ClaudeCli.kt      ← Claude CLI 进程调用 (关键!)
+│   │   │   ├── AnthropicClient.kt← [废弃] HTTP API 方式 (保留参考)
+│   │   │   ├── LarkClient.kt     ← 飞书 CLI 封装
+│   │   │   └── WebDavClient.kt   ← WebDAV HTTP 客户端
+│   │   ├── data/
+│   │   │   ├── ConfigManager.kt  ← SharedPreferences 配置存储
+│   │   │   ├── ConversationManager.kt ← 对话 JSON 文件存储
+│   │   │   └── BackupManager.kt  ← WebDAV 备份/恢复
+│   │   ├── model/
+│   │   │   ├── Conversation.kt   ← 对话数据类 (含 claudeSessionId)
+│   │   │   └── Message.kt        ← 消息数据类
+│   │   └── ui/
+│   │       ├── ChatListView.kt   ← 消息气泡 + Markdown 渲染
+│   │       ├── MessageInputView.kt ← 输入栏 + /命令面板
+│   │       ├── SidebarView.kt    ← 侧边栏 (对话列表/搜索/工具入口)
+│   │       ├── SettingsView.kt   ← 设置面板 (API Key/模型/模板/字体/WebDAV)
+│   │       ├── ShellView.kt      ← Termux 终端模拟
+│   │       ├── LarkToolsView.kt  ← 飞书 CLI 面板
+│   │       └── SystemStatusView.kt ← 环境检测面板
+│   ├── java/com/tcc/             ← [废弃] 旧 Java 源码 (build.py 不编译)
+│   ├── android-35/               ← Android SDK (不提交 git)
+│   ├── dist/                     ← 构建输出目录 (不提交 git)
+│   │   └── TCC.apk               ← 最终 APK (构建后)
+│   └── build/                    ← 构建中间文件 (不提交 git)
+│       └── AndroidManifest.xml   ← 二进制 manifest (构建生成, 需打补丁)
+```
+
+### 构建完整流程 (严格按顺序)
+
+```bash
+# 步骤 0: 确认工作目录
+cd /data/data/com.termux/files/home/tcc/android
+
+# 步骤 1: 生成 Termux 环境包 (只需做一次，或本机 Termux 更新后重做)
+# 前置: 本机必须已安装 node + @anthropic-ai/claude-code
+bash bundle.sh
+# 输出: assets/termux-bundle.tar.gz (~277MB)
+# bundle.sh 会把 Termux 的 bin/node, bin/claude, lib/node_modules, lib/*.so*, etc/ 打包
+
+# 步骤 2: 编译 APK
+python3 build.py
+# 输出: dist/TCC.apk (~280MB, 含 DEX + 二进制 manifest + bundle)
+
+# 步骤 3: 二进制补丁 INTERNET 权限 (必须!)
+# 因为 build.py 的 AXMLWriter 不支持 uses-permission 标签
+# 需要用 Python 脚本在生成的 manifest 中注入 INTERNET 权限并重新签名
+# (见下方 "INTERNET 权限补丁" 章节)
+
+# 步骤 4: 部署到设备
+cp dist/TCC.apk /sdcard/Download/TCC.apk
+# 用户手动安装
+```
+
+### INTERNET 权限二进制补丁
+```
+build.py 生成的 AndroidManifest.xml 不含 <uses-permission android:name="android.permission.INTERNET"/>
+必须在 APK 打包后用 Python 脚本在二进制 manifest 中插入该标签并重新签名。
+具体操作见 build.py 末尾的 patch_manifest() 函数（待集成）。
+当前需要在 build.py 完成签名后，手动运行补丁脚本。
+```
+
+### 修改代码时的关键约束
+
+1. **不要用外部库** — 编译只用 kotlinc + d8，无 Gradle/Maven。所有依赖必须用 Kotlin stdlib + Android SDK 自带 API
+2. **没有 XML 布局** — 所有 UI 用代码创建 (LinearLayout, TextView 等)
+3. **颜色用常量** — 统一用上面颜色规范中的常量，不要硬编码
+4. **中文注释** — 所有类、方法、关键代码块必须加中文注释
+5. **不要改 .gitignore** — bundle/APK/SDK 已排除，不要提交大文件
+6. **改 UI 要记得 applyFontSize** — 新 Text/Padding 要考虑字体大小联动
+7. **不要引入 Java 文件** — `java/com/tcc/` 下的旧文件不被编译，新代码放 `src/`
+8. **build.py 只编译 .kt** — `if fn.endswith('.kt')`，不要创建新的 .java 源文件
+9. **包名固定 com.tcc** — 不要改 package 声明
+10. **异常必须处理** — 后台线程的异常会静默丢失，所有 `Thread{}` 内要有 try-catch
